@@ -6,6 +6,10 @@ timeout = 1
 
 getdir dir
 
+fileopen fhandle 'result.txt' 0
+filewrite fhandle 'burn'
+fileclose fhandle
+
 makepath path dir 'BinaryFile.bin'
 
 crc32file crc path
@@ -15,7 +19,7 @@ else
 ;;   sprintf '0x%08X' crc
 ;;   messagebox inputstr 'CRC32 = '
 
-connect '/C=6 /CFLOWCTRL=none /E /DS /AUTOWINCLOSE=on'
+connect '/C=16 /CFLOWCTRL=none /E /DS /AUTOWINCLOSE=on'
 setspeed 115200
 show -1
 
@@ -27,7 +31,7 @@ send $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA
 mpause 20
 send $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA 
 
-mpause 500
+mpause 1400
 
 send "BOOT"
 
@@ -60,6 +64,21 @@ send $0F
 mpause 300
 
 sendfile path 1
+
+; The timeout limit is 15 sec.
+timeout = 15 
+
+fileopen fhandle 'result.txt' 0
+
+wait 'OK' 'ERROR'
+; If timeout occurs, go to ":timeout".
+if result=0 filewrite fhandle "timeout"
+; has received, go to ":error".
+If result=1 filewrite fhandle 'okey'
+; "ERROR" has received, go to ":error".
+If result=2 filewrite fhandle 'fail'
+
+fileclose fhandle
 
 endif
 
