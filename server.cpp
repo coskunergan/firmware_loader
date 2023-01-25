@@ -15,6 +15,29 @@ namespace fs = std::filesystem;
 /**********************************************************************************************/
 /**********************************************************************************************/
 
+unsigned long crc32(unsigned char *message, int len)
+{
+    int i, j;
+    unsigned long byte, crc, mask;
+
+    i = 0;
+    crc = 0xFFFFFFFF;
+    while(len--)
+    {
+        byte = message[i];            // Get next byte.
+        crc = crc ^ byte;
+        for(j = 7; j >= 0; j--)       // Do eight times.
+        {
+            mask = -(crc & 1);
+            crc = (crc >> 1) ^ (0xEDB88320 & mask);
+        }
+        i = i + 1;
+    }
+    return ~crc;
+}
+
+/**********************************************************************************************/
+
 bool file_exists(const fs::path &p, fs::file_status s = fs::file_status{})
 {
     std::cout << p;
@@ -122,6 +145,7 @@ int main()
     int recvbuflen = 20;
     string myString{};
     SOCKET clientSocket;
+    unsigned long crc = 0;
 
     while(true)
     {
@@ -165,11 +189,13 @@ int main()
                 if(file_exists(repo))
                 {
                     cout << "Clone Repository done.." << endl;
-                    string str = "repos\\" + fsw_name + "\\" + fsw_name + ".tk";                    
-                    const fs::path image{ str};
-                    if(file_exists(image))
+                    string str_tk = "repos\\" + fsw_name + "\\" + fsw_name + ".tk";
+                    string str_mtp = "repos\\" + fsw_name + "\\" + fsw_name + ".mtp";
+                    const fs::path image_tk{ str_tk };
+                    const fs::path image_mtp{ str_mtp };
+                    if(file_exists(image_tk)) // TK FILE Content
                     {
-                        ifstream sourceFile(str, ios::binary);
+                        ifstream sourceFile(str_tk, ios::binary);
                         ofstream destinationFile("BinaryFile.bin", ios::binary);
                         destinationFile << sourceFile.rdbuf();
                         sourceFile.close();
@@ -225,6 +251,120 @@ int main()
                             response_str = "ERROR:4";
                         }
                     }
+                    else if(file_exists(image_mtp)) // MTP file content
+                    {
+                        ifstream file(str_mtp, ios::binary);
+
+                        // Get file size
+                        file.seekg(0, ios::end);
+                        int fileSize = file.tellg();
+                        file.seekg(0, ios::beg);
+
+                        // Read file into buffer
+                        char *buffer = new char[fileSize];
+                        file.read(buffer, fileSize);
+
+                        // Calculate and print CRC32
+                        unsigned long crc_file = crc32((unsigned char *)buffer, fileSize);
+
+                        delete[] buffer;
+
+                        file.close();
+
+                        STARTUPINFO si;
+                        PROCESS_INFORMATION pi;
+                        ZeroMemory(&si, sizeof(si));
+                        si.cb = sizeof(si);
+                        ZeroMemory(&pi, sizeof(pi));
+
+                        string downloadPrg = "C:\\\\Program Files\\Holtek MCU Development Tools\\HOPE3000\\WCMD.exe -D /F" + str_mtp + " /KICP(E-CON12C)";
+                        LPSTR downloadPrgmLpstr = const_cast<LPSTR>(downloadPrg.c_str());
+
+                        const char *burnerPrg = "C:\\\\Program Files\\Holtek MCU Development Tools\\HOPE3000\\WCMD.exe -A";
+                        LPSTR burnerPrgmLpstr = const_cast<LPSTR>(burnerPrg);
+
+                        if(crc_file != crc)
+                        {
+                            cout << "Image differant start the load process!" << endl;
+                            //-------------------------
+                            if(CreateProcess(NULL,    // No module name (use command line)
+                                             downloadPrgmLpstr,        // Command line
+                                             NULL,           // Process handle not inheritable
+                                             NULL,           // Thread handle not inheritable
+                                             FALSE,          // Set handle inheritance to FALSE
+                                             0,              // No creation flags
+                                             NULL,           // Use parent's environment block
+                                             NULL,           // Use parent's starting directory
+                                             &si,            // Pointer to STARTUPINFO structure
+                                             &pi)           // Pointer to PROCESS_INFORMATION structure
+                              )
+                            {
+                                // Wait until child process exits.
+                                WaitForSingleObject(pi.hProcess, 45000);
+                                DWORD n = 0;
+                                GetExitCodeProcess(pi.hProcess, &n);
+                                if(n == 1)
+                                {
+                                    crc = crc_file;
+                                    cout << "Load finish." << endl;
+                                }
+                                else if(n == 259) // timeout
+                                {
+                                    crc = 0;
+                                    cout << "Load timeout!" << endl;
+                                    response_str = "ERROR:12";
+                                }
+                                else
+                                {
+                                    crc = 0;
+                                    cout << "Load fail!" << endl;
+                                    response_str = "ERROR:11";
+                                }
+                            }
+                            else
+                            {
+                                response_str = "ERROR:10";
+                            }
+                        }
+
+                        if(crc_file == crc)
+                        {
+                            CloseHandle(pi.hProcess);
+                            if(CreateProcess(NULL,    // No module name (use command line)
+                                             burnerPrgmLpstr,        // Command line
+                                             NULL,           // Process handle not inheritable
+                                             NULL,           // Thread handle not inheritable
+                                             FALSE,          // Set handle inheritance to FALSE
+                                             0,              // No creation flags
+                                             NULL,           // Use parent's environment block
+                                             NULL,           // Use parent's starting directory
+                                             &si,            // Pointer to STARTUPINFO structure
+                                             &pi)           // Pointer to PROCESS_INFORMATION structure
+                              )
+                            {
+                                WaitForSingleObject(pi.hProcess, 10000);
+                                DWORD n = 0;
+                                GetExitCodeProcess(pi.hProcess, &n);
+                                if(n == 1)
+                                {
+                                    cout << "Burn SUCCES..." << endl;
+                                    response_str = "SUCCES";
+                                }
+                                else if(n == 259) // timeout
+                                {
+                                    cout << "Burn timeout!" << endl;
+                                    response_str = "ERROR:14";
+                                }
+                                else
+                                {
+                                    cout << "Burn fail!" << endl;
+                                    response_str = "ERROR:13";
+                                }
+                            }
+                        }
+                        CloseHandle(pi.hProcess);
+                        CloseHandle(pi.hThread);
+                    }
                     else
                     {
                         cout << "Repository TK File Found!!" << endl;
@@ -241,7 +381,7 @@ int main()
             {
                 cout << "Get the wrong FSW name!!" << endl;
                 response_str = "ERROR:1";
-            }            
+            }
             send_response(clientSocket, "HTTP/1.1 200 OK", "text/plain", response_str.c_str());
             fflush(stdout);
         }
