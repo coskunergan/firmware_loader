@@ -64,23 +64,24 @@ int send_response(int fd, const char *header, const char *content_type, const ch
     // How many bytes in the body
     int content_length = strlen(body);
 
-    int response_length = sprintf(response,
+    int response_length = sprintf(response,                                  
                                   "%s\r\n"
                                   "Access-Control-Allow-Origin: %s\r\n"
                                   "Access-Control-Allow-Methods: %s\r\n"
                                   "Content-Length: %d\r\n"
                                   "Content-Type: %s\r\n"
                                   "Date: %s" // asctime adds its own newline
+                                  "Result= %s\r\n"
                                   "Connection: close\r\n"
                                   "\r\n" // End of HTTP header
-                                  "%s",
-
+                                  "%s",                                  
                                   header,
                                   "*",
                                   "POST, GET",
                                   content_length,
                                   content_type,
                                   asctime(ltime),
+                                  body,
                                   body
                                  );
 
