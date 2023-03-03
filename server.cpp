@@ -7,6 +7,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <Windows.h>
+#include <unistd.h>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -64,7 +65,7 @@ int send_response(int fd, const char *header, const char *content_type, const ch
     // How many bytes in the body
     int content_length = strlen(body);
 
-    int response_length = sprintf(response,                                  
+    int response_length = sprintf(response,
                                   "%s\r\n"
                                   "Access-Control-Allow-Origin: %s\r\n"
                                   "Access-Control-Allow-Methods: %s\r\n"
@@ -74,7 +75,7 @@ int send_response(int fd, const char *header, const char *content_type, const ch
                                   "Result= %s\r\n"
                                   "Connection: close\r\n"
                                   "\r\n" // End of HTTP header
-                                  "%s",                                  
+                                  "%s",
                                   header,
                                   "*",
                                   "POST, GET",
@@ -97,6 +98,113 @@ int send_response(int fd, const char *header, const char *content_type, const ch
 }
 
 /**********************************************************************************************/
+
+int Jlink_Start()
+{
+    // GDB Server parametreleri
+    std::string jlinkGdbServerPath = "C:\\Program Files (x86)\\SEGGER\\JLink_V620c\\JLinkGDBServerCL.exe";
+    std::string device = "AT32F421K8T7";
+    std::string interfaces = "SWD";
+    std::string speed = "1000";
+
+    // GDB Server'ı başlatmak için komutu oluşturun
+    std::string command = "\"" + jlinkGdbServerPath + "\" -device " + device + " -if " + interfaces + " -speed " + speed + " -port 2331";
+
+    STARTUPINFO startupInfo = { 0 };
+    PROCESS_INFORMATION processInfo = { 0 };
+
+    // GDB Server'ı başlatın
+    if(CreateProcess(nullptr, &command[0], nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startupInfo, &processInfo) == FALSE)
+    {
+        std::cout << "GDB Server could not be started." << std::endl;
+        return 1;
+    }
+    std::cout << "kuruldu" << std::endl;
+
+    // GDB Server'ın işlemi tamamlamasını bekleyin
+    //WaitForSingleObject(processInfo.hProcess, INFINITE);
+
+    std::cout << "hazir" << std::endl;
+
+    std::string jlinkExePath = "C:\\Program Files (x86)\\SEGGER\\JLink_V620c\\JLink.exe";
+    std::string jlinkScriptPath = "flashonly.jlink";
+
+    std::string jlinkCommand = "\"" + jlinkExePath + "\"";
+    jlinkCommand += " -device " + device;
+    jlinkCommand += " -if " + interfaces;
+    jlinkCommand += " -speed " + speed;
+    jlinkCommand += " -AutoConnect 1";
+    jlinkCommand += " -CommanderScript " + jlinkScriptPath;
+    // Uygulama yolu
+    LPCSTR applicationPath = jlinkCommand.c_str();
+
+    // Komut satırı parametreleri
+    LPCSTR commandLineArgs = "";
+
+    // Gerekli Windows handle'ları
+    HANDLE hReadPipe, hWritePipe;
+    SECURITY_ATTRIBUTES saAttr;
+    STARTUPINFO siInfo;
+    PROCESS_INFORMATION piInfo;
+
+    // Pipe'lar için güvenlik özellikleri ayarları
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;
+    saAttr.lpSecurityDescriptor = NULL;
+
+    // Pipe'lar oluşturuluyor
+    if(!CreatePipe(&hReadPipe, &hWritePipe, &saAttr, 0))
+    {
+        cout << "Hata: Pipe oluşturulamadi." << endl;
+        return 1;
+    }
+
+    // Uygulama için başlatma bilgileri ayarlanıyor
+    ZeroMemory(&siInfo, sizeof(siInfo));
+    siInfo.cb = sizeof(siInfo);
+    siInfo.hStdError = hWritePipe;
+    siInfo.hStdOutput = hWritePipe;
+    siInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+    // Uygulama başlatılıyor
+    if(!CreateProcess(NULL, (LPSTR)applicationPath, NULL, NULL, TRUE, 0, NULL, NULL, &siInfo, &piInfo))
+    {
+        cout << "Hata: Uygulama başlatilamadi." << endl;
+        return 1;
+    }
+
+    std::cout << "----------------------------------------------- " << std::endl;
+    // Pipe okuma için hazırlık
+    char buffer[1024] = {0};
+    DWORD bytesRead;
+
+    int result = 1;
+
+    // Pipe'ları kapatın ve çıktıları okuyun
+    CloseHandle(hWritePipe);
+
+    while(ReadFile(hReadPipe, buffer, sizeof(buffer), &bytesRead, NULL))
+    {
+        cout << buffer << endl;
+        if(strstr(buffer, "\r\nO.K.") != nullptr)
+        {
+            std::cout << ">>>>>>>>>> Yukleme BASARILI <<<<<<<<<<<<<<  " << std::endl;
+            result = 0;
+            break;
+        }
+    }
+    std::cout << "----------------------------------------------- " << std::endl;
+
+    CloseHandle(hReadPipe);
+    CloseHandle(piInfo.hProcess);
+    CloseHandle(piInfo.hThread);
+
+    CloseHandle(processInfo.hProcess);
+    CloseHandle(processInfo.hThread);
+
+    return result;
+}
+
 
 int main()
 {
@@ -148,6 +256,8 @@ int main()
     SOCKET clientSocket;
     unsigned long crc = 0;
 
+    //////////////
+
     while(true)
     {
         clientSocket = accept(listenSocket, NULL, NULL);
@@ -179,7 +289,7 @@ int main()
                 }
                 if(!file_exists(repo))
                 {
-                    string str = "clone_repository.exe http://uretim:123456@10.15.16.10/Bonobo.Git.Server/" + fsw_name + ".git repos/" + fsw_name;
+                    string str = "clone_repository.exe http://uretim:123456@10.15.16.10/Bonobo.Git.Server/" + fsw_name + ".git repos/" + fsw_name;                    
                     system(str.c_str());
                 }
                 else
@@ -192,8 +302,10 @@ int main()
                     cout << "Clone Repository done.." << endl;
                     string str_tk = "repos\\" + fsw_name + "\\" + fsw_name + ".tk";
                     string str_mtp = "repos\\" + fsw_name + "\\" + fsw_name + ".mtp";
+                    string str_art = "repos\\" + fsw_name + "\\" + fsw_name + ".art";
                     const fs::path image_tk{ str_tk };
                     const fs::path image_mtp{ str_mtp };
+                    const fs::path image_art{ str_art };
                     if(file_exists(image_tk)) // TK FILE Content
                     {
                         ifstream sourceFile(str_tk, ios::binary);
@@ -366,9 +478,25 @@ int main()
                         CloseHandle(pi.hProcess);
                         CloseHandle(pi.hThread);
                     }
+                    else if(file_exists(image_art)) // ART FILE Content
+                    {
+                        ifstream sourceFile(str_art, ios::binary);
+                        ofstream destinationFile("Project.hex", ios::binary);
+                        destinationFile << sourceFile.rdbuf();
+                        sourceFile.close();
+                        destinationFile.close();                        
+                        if(Jlink_Start())
+                        {
+                            response_str = "ERROR:15";
+                        }
+                        else
+                        {
+                            response_str = "SUCCES";
+                        }
+                    }
                     else
                     {
-                        cout << "Repository TK File Found!!" << endl;
+                        cout << "Repository File not tk,mtp,hex contain!!" << endl;
                         response_str = "ERROR:3";
                     }
                 }

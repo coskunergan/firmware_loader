@@ -1,0 +1,4 @@
+device AT32F421K8T7
+#erase
+loadfile Project.hex
+q
