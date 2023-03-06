@@ -7,7 +7,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <Windows.h>
-#include <unistd.h>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -122,7 +121,17 @@ int Jlink_Start()
     std::cout << "kuruldu" << std::endl;
 
     // GDB Server'ın işlemi tamamlamasını bekleyin
-    //WaitForSingleObject(processInfo.hProcess, INFINITE);
+    WaitForSingleObject(processInfo.hProcess, 1000);
+
+    DWORD exitCode;
+    GetExitCodeProcess(processInfo.hProcess, &exitCode);
+    std::cout << "\n\nGDB Exit Code:" << exitCode << "\n\n";
+
+    if(exitCode == 259)//usb timeout
+    {
+        std::cout << "USB Timeout Error !!!" << std::endl;
+        return 2;
+    }
 
     std::cout << "hazir" << std::endl;
 
@@ -176,7 +185,7 @@ int Jlink_Start()
     std::cout << "----------------------------------------------- " << std::endl;
     // Pipe okuma için hazırlık
     char buffer[1024] = {0};
-    DWORD bytesRead;
+    DWORD bytesRead = 0;
 
     int result = 1;
 
@@ -248,7 +257,9 @@ int main()
         return 1;
     }
 
-    cout << "Sunucu dinlemede, 8080 portunda..." << endl;
+    cout << "V1.0.0" << endl;
+    cout << "Firmware Loader Port:8080" << endl;
+    cout << "Coskun ERGAN" << endl;
 
     char recvbuf[20];
     int recvbuflen = 20;
@@ -289,7 +300,8 @@ int main()
                 }
                 if(!file_exists(repo))
                 {
-                    string str = "clone_repository.exe http://uretim:123456@10.15.16.10/Bonobo.Git.Server/" + fsw_name + ".git repos/" + fsw_name;                    
+                    string str = "clone_repository.exe http://uretim:123456@10.15.16.10/Bonobo.Git.Server/" + fsw_name + ".git repos/" + fsw_name;
+                    //string str = "clone_repository.exe https://github.com/coskunergan/FSW0000999.git repos/FSW0000999"; // TEST
                     system(str.c_str());
                 }
                 else
@@ -484,10 +496,15 @@ int main()
                         ofstream destinationFile("Project.hex", ios::binary);
                         destinationFile << sourceFile.rdbuf();
                         sourceFile.close();
-                        destinationFile.close();                        
-                        if(Jlink_Start())
+                        destinationFile.close();
+                        int result = Jlink_Start();
+                        if(result == 1)
                         {
                             response_str = "ERROR:15";
+                        }
+                        else if(result == 2)
+                        {
+                            response_str = "ERROR:16"; // USB Timeout
                         }
                         else
                         {
@@ -496,7 +513,7 @@ int main()
                     }
                     else
                     {
-                        cout << "Repository File not tk,mtp,hex contain!!" << endl;
+                        cout << "Repository File is not TK, MTP, ART extention!!" << endl;
                         response_str = "ERROR:3";
                     }
                 }
