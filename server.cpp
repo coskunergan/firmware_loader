@@ -257,7 +257,7 @@ int main()
         return 1;
     }
 
-    cout << "V1.0.0" << endl;
+    cout << "V1.0.1" << endl;
     cout << "Firmware Loader Port:8080" << endl;
     cout << "Coskun ERGAN" << endl;
 
@@ -372,6 +372,8 @@ int main()
                         }
                         else
                         {
+                            CloseHandle(pi.hProcess);
+                            CloseHandle(pi.hThread);
                             cout << "Failed to start process!" << endl;
                             response_str = "ERROR:4";
                         }
@@ -395,6 +397,8 @@ int main()
                         delete[] buffer;
 
                         file.close();
+
+                        system("Busy.bat");
 
                         STARTUPINFO si;
                         PROCESS_INFORMATION pi;
@@ -489,9 +493,18 @@ int main()
                         }
                         CloseHandle(pi.hProcess);
                         CloseHandle(pi.hThread);
+                        if(response_str == "SUCCES")
+                        {
+                            system("Succes.bat");
+                        }
+                        else
+                        {
+                            system("Fail.bat");
+                        }
                     }
                     else if(file_exists(image_art)) // ART FILE Content
                     {
+                        system("Busy.bat");
                         ifstream sourceFile(str_art, ios::binary);
                         ofstream destinationFile("Project.hex", ios::binary);
                         destinationFile << sourceFile.rdbuf();
@@ -501,14 +514,17 @@ int main()
                         if(result == 1)
                         {
                             response_str = "ERROR:15";
+                            system("Fail.bat");
                         }
                         else if(result == 2)
                         {
                             response_str = "ERROR:16"; // USB Timeout
+                            system("Fail.bat");
                         }
                         else
                         {
                             response_str = "SUCCES";
+                            system("Succes.bat");
                         }
                     }
                     else

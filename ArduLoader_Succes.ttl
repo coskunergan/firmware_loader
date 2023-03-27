@@ -1,0 +1,51 @@
+;; Coskun ERGAN 
+;; 8051 Bootloader Script
+;; 21.12.2020
+
+timeout = 1
+
+connect '/C=6 /CFLOWCTRL=none /E /DS /AUTOWINCLOSE=on'
+setspeed 57600
+show -1
+
+send $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA 
+mpause 20
+send $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA 
+mpause 20
+send $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA $AA 
+
+mpause 500
+
+send "BOOT"
+
+send 0
+send 0
+send 0
+send 0
+
+send 0
+send 0
+send 0
+send 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+send $20  
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  7   6   5   4   3   2   1   0     Command Bit Number
+;;+---+---+---+---+---+---+---+---+
+;;| 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
+;;+---+---+---+---+---+---+---+---+
+;;  |   |   |   |   |   |   |   |       
+;;  |   |   |   |   |   |   |   +--- Burn active  
+;;  |   |   |   |   |   |   +------- Check Active  
+;;  |   |   |   |   |   +----------- Power On 
+;;  |   |   |   |   +--------------- Beeper On 
+;;  |	|   |   +------------------- Holtek/BYD
+;;  |   |   +----------------------- Succes LED      
+;;  |   +--------------------------- Busy LED   
+;;  +------------------------------- Fail LED   
+
+mpause 300
+
+closett
+
