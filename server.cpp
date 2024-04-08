@@ -98,16 +98,17 @@ int send_response(int fd, const char *header, const char *content_type, const ch
 
 /**********************************************************************************************/
 
-int Jlink_Start()
+int Jlink_Start(string jlinkScriptPath)
 {
     // GDB Server parametreleri
     std::string jlinkGdbServerPath = "C:\\Program Files (x86)\\SEGGER\\JLink_V620c\\JLinkGDBServerCL.exe";
-    std::string device = "AT32F421K8T7";
+    //std::string device = "AT32F421K8T7";
     std::string interfaces = "SWD";
     std::string speed = "1000";
 
     // GDB Server'ı başlatmak için komutu oluşturun
-    std::string command = "\"" + jlinkGdbServerPath + "\" -device " + device + " -if " + interfaces + " -speed " + speed + " -port 2331";
+    //std::string command = "\"" + jlinkGdbServerPath + "\" -device " + device + " -if " + interfaces + " -speed " + speed + " -port 2331";
+	std::string command = "\"" + jlinkGdbServerPath + "\" -if " + interfaces + " -speed " + speed + " -port 2331";
 
     STARTUPINFO startupInfo = { 0 };
     PROCESS_INFORMATION processInfo = { 0 };
@@ -136,10 +137,10 @@ int Jlink_Start()
     std::cout << "hazir" << std::endl;
 
     std::string jlinkExePath = "C:\\Program Files (x86)\\SEGGER\\JLink_V620c\\JLink.exe";
-    std::string jlinkScriptPath = "flashonly.jlink";
+    //std::string jlinkScriptPath = "flashonly.jlink";
 
     std::string jlinkCommand = "\"" + jlinkExePath + "\"";
-    jlinkCommand += " -device " + device;
+    //jlinkCommand += " -device " + device;
     jlinkCommand += " -if " + interfaces;
     jlinkCommand += " -speed " + speed;
     jlinkCommand += " -AutoConnect 1";
@@ -257,7 +258,7 @@ int main()
         return 1;
     }
 
-    cout << "V1.0.1" << endl;
+    cout << "V1.0.2" << endl;
     cout << "Firmware Loader Port:8080" << endl;
     cout << "Coskun ERGAN" << endl;
 
@@ -314,10 +315,11 @@ int main()
                     cout << "Clone Repository done.." << endl;
                     string str_tk = "repos\\" + fsw_name + "\\" + fsw_name + ".tk";
                     string str_mtp = "repos\\" + fsw_name + "\\" + fsw_name + ".mtp";
-                    string str_art = "repos\\" + fsw_name + "\\" + fsw_name + ".art";
+                    string str_hex = "repos\\" + fsw_name + "\\" + fsw_name + ".hex";
+					string str_jlink = "repos\\" + fsw_name + "\flash.jlink";
                     const fs::path image_tk{ str_tk };
                     const fs::path image_mtp{ str_mtp };
-                    const fs::path image_art{ str_art };
+                    const fs::path image_hex{ str_hex };
                     if(file_exists(image_tk)) // TK FILE Content
                     {
                         ifstream sourceFile(str_tk, ios::binary);
@@ -502,15 +504,15 @@ int main()
                             system("Fail.bat");
                         }
                     }
-                    else if(file_exists(image_art)) // ART FILE Content
+                    else if(file_exists(image_hex)) // HEX FILE Content
                     {
                         system("Busy.bat");
-                        ifstream sourceFile(str_art, ios::binary);
-                        ofstream destinationFile("Project.hex", ios::binary);
-                        destinationFile << sourceFile.rdbuf();
-                        sourceFile.close();
-                        destinationFile.close();
-                        int result = Jlink_Start();
+                        //ifstream sourceFile(str_hex, ios::binary);
+                        //ofstream destinationFile("Project.hex", ios::binary);
+                        //destinationFile << sourceFile.rdbuf();
+                        //sourceFile.close();
+                        //destinationFile.close();
+                        int result = Jlink_Start(str_jlink);
                         if(result == 1)
                         {
                             response_str = "ERROR:15";
@@ -529,7 +531,7 @@ int main()
                     }
                     else
                     {
-                        cout << "Repository File is not TK, MTP, ART extention!!" << endl;
+                        cout << "Repository File is not TK, MTP, HEX extention!!" << endl;
                         response_str = "ERROR:3";
                     }
                 }
