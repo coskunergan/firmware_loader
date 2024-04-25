@@ -329,7 +329,7 @@ int main()
                     string str_tk = "repos\\" + fsw_name + "\\" + fsw_name + ".tk";
                     string str_mtp = "repos\\" + fsw_name + "\\" + fsw_name + ".mtp";
                     string str_hex = "repos\\" + fsw_name + "\\" + fsw_name + ".hex";
-					string str_jlink = "repos\\" + fsw_name + "\flash.jlink";
+					string str_jlink = "repos\\" + fsw_name + "\\flash.jlink";
                     const fs::path image_tk{ str_tk };
                     const fs::path image_mtp{ str_mtp };
                     const fs::path image_hex{ str_hex };
