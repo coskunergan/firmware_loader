@@ -108,12 +108,17 @@ int Jlink_Start(string jlinkScriptPath)
 
     std::cout << "File path: " << std::endl;
     std::cout << jlinkScriptPath << std::endl;
-	
-	ifstream sourceFile(jlinkScriptPath);
-    size_t size= sourceFile.tellg();
-    std::string file_content(size, ' ');
-    sourceFile.seekg(0);
-    sourceFile.read(&file_content[0], size);
+
+    ifstream sourceFile(jlinkScriptPath, ios::binary);
+
+    // Get file size
+    sourceFile.seekg(0, ios::end);
+    int fileSize = sourceFile.tellg();
+    sourceFile.seekg(0, ios::beg);
+
+    // Read file into buffer
+    char *file_content = new char[fileSize];
+    sourceFile.read(file_content, fileSize);
     sourceFile.close();
     
 	std::cout << "File Content: " << std::endl;
