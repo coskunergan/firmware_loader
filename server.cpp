@@ -105,6 +105,9 @@ int Jlink_Start(string jlinkScriptPath)
     //std::string device = "AT32F421K8T7";
     std::string interfaces = "SWD";
     std::string speed = "1000";
+
+    std::cout << "File path: " << std::endl;
+    std::cout << jlinkScriptPath << std::endl;
 	
 	ifstream sourceFile(jlinkScriptPath);
     size_t size= sourceFile.tellg();
@@ -112,9 +115,9 @@ int Jlink_Start(string jlinkScriptPath)
     sourceFile.seekg(0);
     sourceFile.read(&file_content[0], size);
     sourceFile.close();
-	
-	std::cout << "File Content: " << file_content << std::endl;
-	
+    
+	std::cout << "File Content: " << std::endl;
+    std::cout << file_content << std::endl;
 
     // GDB Server'ı başlatmak için komutu oluşturun
     std::string command = "\"" + jlinkGdbServerPath + "\" -" + file_content + " -if " + interfaces + " -speed " + speed + " -port 2331";
