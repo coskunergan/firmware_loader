@@ -105,10 +105,17 @@ int Jlink_Start(string jlinkScriptPath)
     //std::string device = "AT32F421K8T7";
     std::string interfaces = "SWD";
     std::string speed = "1000";
+	
+	ifstream sourceFile(jlinkScriptPath, ios::binary);
+    std::string file_content << sourceFile.rdbuf();
+    sourceFile.close();
+	
+	std::cout << "File Content: " << file_content << std::endl;
+	
 
     // GDB Server'ı başlatmak için komutu oluşturun
-    //std::string command = "\"" + jlinkGdbServerPath + "\" -device " + device + " -if " + interfaces + " -speed " + speed + " -port 2331";
-	std::string command = "\"" + jlinkGdbServerPath + "\" -if " + interfaces + " -speed " + speed + " -port 2331";
+    std::string command = "\"" + jlinkGdbServerPath + "\" -" + file_content + " -if " + interfaces + " -speed " + speed + " -port 2331";
+	//std::string command = "\"" + jlinkGdbServerPath + "\" -if " + interfaces + " -speed " + speed + " -port 2331";
 
     STARTUPINFO startupInfo = { 0 };
     PROCESS_INFORMATION processInfo = { 0 };
