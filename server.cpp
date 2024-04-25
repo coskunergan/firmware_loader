@@ -120,13 +120,22 @@ int Jlink_Start(string jlinkScriptPath)
     char *file_content = new char[fileSize];
     sourceFile.read(file_content, fileSize);
     sourceFile.close();
-    
-	std::cout << "File Content: " << std::endl;
+
+    for(size_t i = 0; i < fileSize; i++)
+    {
+        if(file_content[i] == '\r' || file_content[i] == '\n')
+        {
+            file_content[i] = 0;
+            break;
+        }
+    }
+
+    std::cout << "File Content: " << std::endl;
     std::cout << file_content << std::endl;
 
     // GDB Server'ı başlatmak için komutu oluşturun
     std::string command = "\"" + jlinkGdbServerPath + "\" -" + file_content + " -if " + interfaces + " -speed " + speed + " -port 2331";
-	//std::string command = "\"" + jlinkGdbServerPath + "\" -if " + interfaces + " -speed " + speed + " -port 2331";
+    //std::string command = "\"" + jlinkGdbServerPath + "\" -if " + interfaces + " -speed " + speed + " -port 2331";
 
     STARTUPINFO startupInfo = { 0 };
     PROCESS_INFORMATION processInfo = { 0 };
@@ -334,7 +343,7 @@ int main()
                     string str_tk = "repos\\" + fsw_name + "\\" + fsw_name + ".tk";
                     string str_mtp = "repos\\" + fsw_name + "\\" + fsw_name + ".mtp";
                     string str_hex = "repos\\" + fsw_name + "\\" + fsw_name + ".hex";
-					string str_jlink = "repos\\" + fsw_name + "\\flash.jlink";
+                    string str_jlink = "repos\\" + fsw_name + "\\flash.jlink";
                     const fs::path image_tk{ str_tk };
                     const fs::path image_mtp{ str_mtp };
                     const fs::path image_hex{ str_hex };
