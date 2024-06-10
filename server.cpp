@@ -577,6 +577,7 @@ int main()
             fflush(stdout);
 			Sleep(500); // 500 milisaniye (0.5 saniye) bekler
 			while(recv(clientSocket, recvbuf, recvbuflen, 0) > 0);
+			shutdown(clientSocket, SD_SEND);
         }
 		closesocket(clientSocket);
     }
