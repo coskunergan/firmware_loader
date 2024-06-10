@@ -585,7 +585,11 @@ int main()
             send_response(clientSocket, "HTTP/1.1 200 OK", "text/plain", response_str.c_str());
             fflush(stdout);
 			Sleep(500); // 500 milisaniye (0.5 saniye) bekler
-			while(recv(clientSocket, recvbuf, recvbuflen, 0) > 0);
+			while(recv(clientSocket, recvbuf, recvbuflen, 0) > 0)
+			{
+				recvbuf[0] = '\0';
+			}
+			recvbuf[0] = '\0';
 			shutdown(clientSocket, SD_SEND);
         }
 		closesocket(clientSocket);
