@@ -285,7 +285,7 @@ int main()
         return 1;
     }
 
-    cout << "V1.0.2" << endl;
+    cout << "V1.0.3" << endl;
     cout << "Firmware Loader Port:8080" << endl;
     cout << "Coskun ERGAN" << endl;
 
@@ -576,6 +576,7 @@ int main()
             send_response(clientSocket, "HTTP/1.1 200 OK", "text/plain", response_str.c_str());
             fflush(stdout);
         }
+		closesocket(clientSocket);
     }
 
     cout << "Soket kapatiliyor.." << endl;
