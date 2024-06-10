@@ -540,15 +540,24 @@ int main()
                         //sourceFile.close();
                         //destinationFile.close();
                         int result = Jlink_Start(str_jlink);
-                        if(result == 1)
+                        if(result != 0)
                         {
-                            response_str = "ERROR:15";
-                            system("Fail.bat");
-                        }
-                        else if(result == 2)
-                        {
-                            response_str = "ERROR:16"; // USB Timeout
-                            system("Fail.bat");
+							result = Jlink_Start(str_jlink);
+							if(result == 1)
+							{
+                                response_str = "ERROR:15";
+                                system("Fail.bat");
+							}
+							else if(result == 2)
+							{
+								response_str = "ERROR:16"; // USB Timeout
+								system("Fail.bat");
+							}
+							else
+							{
+								response_str = "SUCCES";
+								system("Succes.bat");
+							}
                         }
                         else
                         {
